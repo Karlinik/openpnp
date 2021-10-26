@@ -33,6 +33,7 @@ import org.openpnp.spi.PartAlignment;
 import org.openpnp.util.UiUtils;
 import org.openpnp.util.VisionUtils;
 import org.openpnp.vision.pipeline.CvPipeline;
+import org.openpnp.vision.pipeline.stages.TestCapture;
 import org.openpnp.vision.pipeline.ui.CvPipelineEditor;
 import org.openpnp.vision.pipeline.ui.CvPipelineEditorDialog;
 
@@ -121,11 +122,24 @@ public class ReferenceBottomVisionPartConfigurationWizard extends AbstractConfig
             });
         });
 
+        JButton btnTest = new JButton("Capture");
+        btnTest.addActionListener((e) -> {
+            UiUtils.submitUiMachineTask(() -> {
+                capture();
+            });
+//            try {
+//                capture();
+//            } catch (Exception ex) {
+//                ex.printStackTrace();
+//            }
+        });
+
         testAlignmentAngle = new JTextField();
         testAlignmentAngle.setText("0.000");
         panel.add(testAlignmentAngle, "4, 6, right, default");
         testAlignmentAngle.setColumns(10);
         panel.add(btnTestAlighment, "6, 6");
+        panel.add(btnTest, "8, 6");
 
         chckbxCenterAfterTest = new JCheckBox("Center After Test");
         chckbxCenterAfterTest.setToolTipText("Center and rotate the part after the test.");
@@ -206,6 +220,20 @@ public class ReferenceBottomVisionPartConfigurationWizard extends AbstractConfig
             });
         });
 
+    }
+
+    private void capture() throws Exception {
+        CvPipeline pipeline = new CvPipeline();
+        pipeline.setProperty("camera", VisionUtils.getBottomVisionCamera());
+        pipeline.setProperty("nozzle", MainFrame.get().getMachineControls().getSelectedNozzle());
+        pipeline.setProperty("part", part);
+        pipeline.setProperty("package", part.getPackage());
+        pipeline.setProperty("lightActuator", Configuration.get().getMachine().getActuatorByName("bottomLight"));
+
+        TestCapture captureStage = new TestCapture();
+        pipeline.add("test capture", captureStage);
+
+        pipeline.process();
     }
 
     private void testAlignment(boolean centerAfterTest) throws Exception {
